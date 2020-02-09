@@ -111,3 +111,6 @@ zookeeper;
   - for topics not created explicitly, but asked for usage by producers, these topics are automatically created by kafka brokers with default "partitions" and "replication factors", but this default values are set by default with minimum values such as 1 partition and 1 replication factor.
   - these default values can be changed on the file $KAFKA_HOME/config/server.properties, e.g;
     num.partitions=1
+
+[kafka bi-directional client compatibility]
+  https://www.confluent.io/blog/upgrading-apache-kafka-clients-just-got-easier/
