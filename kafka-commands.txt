@@ -1,0 +1,46 @@
+# starting zookeeper
+$ zookeeper-server-start $KAFKA_HOME/config/zookeeper.properties
+
+# starting kafka broker
+$ kafka-server-start $KAFKA_HOME/config/server.properties
+
+# kafka creating a topic
+$ kafka-topics -zookeeper localhost:2181 --topic first_topic --create --partitions 3 --replication-factor 1
+
+# kafka listing available topics
+$ kafka-topics -zookeeper localhost:2181 --list
+
+# kafka describing details about a topic
+$ kafka-topics -zookeeper localhost:2181 --topic first_topic --describe
+
+# kafka deleting a topic
+$ kafka-topics -zookeeper localhost:2181 --topic first_topic --delete
+
+# kafka starting a new console producer, without providing any acks (acks=0 is the default)
+$ kafka-console-producer --broker-list localhost:9092 --topic first_topic
+
+# kafka starting a new console producer with property acks=all set (the default is)
+$ kafka-console-producer --broker-list localhost:9092 --topic first_topic --producer-property acks=all (acks=0 is the default)
+
+# starting a kafka console consumer, reading from this "time instance" onward (the consumer start its process)
+$ kafka-console-consumer --bootstrap-server localhost:9092 --topic first_topic
+
+# starting a kafka console consumer, reading everything from a specific topic from the begining up to now
+$ kafka-console-consumer --bootstrap-server localhost:9092 --topic first_topic --from-beginning
+
+# starting a kafka console consumer specifiying a group (application name/module)
+# - consumer group get/read msgs in a round robin style, according to the number of consumer instances running
+# - in case the number of consumers for a "group" increases or decreases, the consumers are rearranged in order to delivery messages to this new number of consumers
+# - in case no consumer for a group is running, so messages sent to topics which have consumer groups assigned to, are kept and deliveried to consumers as soon as some get running again
+$ kafka-console-consumer --bootstrap-server localhost:9092 --topic first_topic --group my-application-group-id
+
+# list all consumer groups, describe a consumer group, delete consumer group info, or reset consumer group offsets
+# list all consumer available consumer groups for a broker
+$ kafka-consumer-groups --bootstrap-server localhost:9092 --list
+
+# describe details about a consumer group
+$ kafka-consumer-groups --bootstrap-server localhost:9092 --describe --group my-application-group-id
+
+# in order to replay data to a consumer group, it is necessary to reset the offset of this consumer-group
+# options for reseting; --reset-offsets [--to-datetime, --by-period, --to-earliest, --to-latest, --shift-by, --to-current]
+$ kafka-consumer-groups --bootstrap-server localhost:9092 --group my-application-group-id --reset-offsets --to-earliest --execute --topic first_topic

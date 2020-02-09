@@ -1,0 +1,113 @@
+[basic definitions]
+kafka;
+  - it is a distributed (broker) system
+topics;
+  - a particular stream of data
+  - it is identified by its name
+  - topics are split in partitions
+  - when creating topics it's mandatory to provide the number of partitions (explicitly)
+  - kafka strives to distribute the partitions over different brokers
+partitions;
+  - each partition is ordered
+  - each message within a partition gets an incremental id, called "offset"
+  - order is guaranteed only within a partition (not across partitions)
+  - once the data is written to a partition, it can't be changed (immutability)
+offset; 
+  - has a meaning for only a specific partition
+brokers;
+  - it is a kafka server instance hosted on a machine and binded to a port number
+  - holds topics, which in turn, holds partitions
+  - a kafka cluster is composed of multiple brokers (servers, or services running on servers bound to port numbers)
+  - each broker is identified with its ID which is a Integer value (0, 1, 2, etc.), usually its ID is automatically assigned
+  - after connecting to any broker (called a bootstrap broker), you will be connected to the entire cluster
+  # a good number to get started is 3 brokers, but some big clusters have over 100 brokers
+topic replication factor;
+  - as the nature of kafka is distributed (broker) system, replication is mandatory, if a machine/service goes down, the system still working
+  - topics should have a replication factor greater than 1 (usually between 2 and 3), 3 is being gold standard
+  - replication factor tells how much replication of a partition should be duplicated/replicated across available brokers
+leader for partition;
+  - at any time only ONE broker can be a leader for a given partition
+  - only that leader can receive and serve data for a partition
+  - the other brokers will synchronize the data, therefore each partition has one leader and multiple ISR (in-sync replica)
+  - what decides which brokers are leaders or ISR is the Zookeeper, it is automatically managed by kafka system
+producers;
+  - writes data to topics (which remember, it is made of partitions)
+  - producers automatically know to which broker and partion to write (through Zookeeper), the producer only has to care on writing data
+  - in case of broker failure, producers will automatically recover
+  - the load is balanced to many brokers thanks to the number of partitions
+  - producers can choose to receive aknowledgment of data writes;
+    - acks=0 means, producer won't wait for acknowledgment (possible data loss)
+    - acks=1 means, producer will wait for leader acknowledgment (limited data loss)
+    - acks=all means, producer will wait for leader + all replicas acknowledgment (no data loss)
+producers message key;
+  - producers can choose to send a key with the message (string, number, etc.)
+    - if key=null, or in other words, no key is provided with a data/message/event, this data is sent round robin to the available brokers
+    - if a key is sent alongside the message/data/payload/event, then all messages for that key will always go to the same partition
+  - a key is basically sent if you need message ordering for a specified field, e.g; truck_id
+    - although it's known, there's no how to explicit to which partition a key (with its message) must be sent
+consumers;
+  - consumers read data from a topic (identified by name)
+  - consumers know which broker to read from
+  - in case of broker failure, consumers know how to recover (goes to another available node)
+  - data is read in order within each partitions
+consumer groups;
+  - each consumer within a group reads from exclusive partitions
+  - if you have more consumers than partitions, some consumers will be inactive
+  - consumer groups are usually associated to an application, or a module which consumes data, so different applications although consumes data from the same topics and partitions, it is suggested to have different groups (consumer group)
+consumer offset;
+  - kafka stores the offsets at which a consumer group has been reading
+  - the offset committed live in kafka topic named __consumer_offsets
+  - when a consumer in a group has processed data received from kafka, it should be committing the offsets
+  - if a consumer dies, it will be able to read back from where it left off thanks to the committed consumer offsets
+delivery semantics for consumers;
+  - consumers choose when to commit their offsets
+  - there are 3 delivery semantics
+    - AT THE MOST ONCE
+      - offsets are committed as soon as the message is received
+      - if the processing goes wrong, the message will be lost (it won't be read again)
+    - AT LEAST ONCE (usually preferred)
+      - offsets are committed after the message is processed
+      - if the processing goes wrong, the message will be read again
+      - this can result in duplicate processing of messages, so make sure your processing is IDEMPOTENT (i,e; processing again the messages won't impact your system)
+    - EXACTLY ONCE
+      - can be achieved for kafka => kafka workflows using kafka streams API
+kafka broker discovey;
+  - every kafka broker is also called a "bootstrap server"
+  - that means that you only need to connect to one broker, and you will be connected to the entire cluster
+  - each broker knows about all brokers in the cluster, with their topics and partitions (metadata)
+zookeeper;
+  - kafka can't work without zookeeper
+  - zookeeper manages all brokers (keeps a list of them)
+  - zookeeper helps in performing leader election for partitions
+  - zookeeper sends notifications to kafka in case of changes (e.g; new topic, broker dies, broker comes up, delete topics, etc.)
+  - zookeeper by design operations (in production) with an odd number of servers (3, 5, 7, etc.)
+  - zookeeper has a leader (handle writes) the rest of the servers are followers (handle reads)
+  
+[kafka guarantees]
+  - messages are appended to a topic-partition in the order they are sent
+  - consumers read messages in the order stored in a topic-partition
+  - with a replication factor of N, producers and consumers can tolerate up to N-1 brokers being down;
+    - this is why a replication factor of 3 is a good idea;
+    - allows for one broker to be taken down for maintenance
+    - allows for another broker to be taken down unexpectedly
+  - as long as the number of partitions remains constant for a topic (no new partitions), the same key will always go to the same partition
+
+[theory roundup]
+  - kafka cluster groups/holds brokers (bootstrap servers)
+  - brokers groups/holds topics
+  - topics groups/holds partitions, and sets replication definitions
+    - partition leader & in-sinc-replicas (ISR)
+  - producers writes data to the kafka cluster
+    - round robin (delivering data to brokers)
+    - key based ordering
+    - akcs strategy
+  - consumers reads data from the kafka cluster
+    - consumer offsets
+    - consumer groups
+    - at least once
+    - at most once
+
+[topics automatically created]
+  - for topics not created explicitly, but asked for usage by producers, these topics are automatically created by kafka brokers with default "partitions" and "replication factors", but this default values are set by default with minimum values such as 1 partition and 1 replication factor.
+  - these default values can be changed on the file $KAFKA_HOME/config/server.properties, e.g;
+    num.partitions=1
