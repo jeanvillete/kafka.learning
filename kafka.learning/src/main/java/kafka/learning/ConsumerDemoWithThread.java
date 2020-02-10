@@ -51,10 +51,10 @@ public class ConsumerDemoWithThread {
                     try {
                         latch.await();
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        LOGGER.error("InterruptedException has been raised; ", e);
                     }
                     LOGGER.info("Application has exited.");
-                })
+                }, "Thread-Shutting-Down-Hook")
         );
 
         try {
@@ -95,8 +95,7 @@ class ConsumerRunnable implements Runnable {
         this.consumer = new KafkaConsumer<>(properties);
 
         // subscribe consumer to our topic(s)
-
-        consumer.subscribe(singleton(topic));
+        this.consumer.subscribe(singleton(topic));
     }
 
     @Override
